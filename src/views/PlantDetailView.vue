@@ -52,7 +52,7 @@
               />
             </a-list-item>
             <a-list-item>
-              <template #prefix><SunOutlined class="list-icon" /></template>
+              <template #prefix><BulbOutlined class="list-icon" /></template>
               <a-list-item-meta
                 title="光照需求"
                 :description="getLightText(plant.lightRequirements)"
@@ -199,7 +199,7 @@ import {
   EnvironmentOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
-  SunOutlined,
+  BulbOutlined,
   ThunderboltOutlined,
   EditOutlined
 } from '@ant-design/icons-vue'

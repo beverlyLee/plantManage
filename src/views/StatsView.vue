@@ -51,7 +51,7 @@
       </template>
 
       <a-list :data-source="locationStats">
-        <a-list-item v-slot="{ item }">
+        <a-list-item v-for="item in locationStats" :key="item.location">
           <a-list-item-meta>
             <template #title>{{ item.location }}</template>
             <template #description>
@@ -73,7 +73,7 @@
           <a-card class="mini-card" :bordered="false">
             <div class="mini-stat">
               <div class="mini-icon" :style="{ background: item.color }">
-                <SunOutlined />
+                <BulbOutlined />
               </div>
               <div class="mini-info">
                 <div class="mini-value">{{ item.count }}</div>
@@ -133,7 +133,7 @@ import {
   BellOutlined,
   ExclamationCircleOutlined,
   ThunderboltOutlined,
-  SunOutlined,
+  BulbOutlined,
   RiseOutlined
 } from '@ant-design/icons-vue'
 

@@ -3,17 +3,17 @@
     <div class="stats-section">
       <a-row :gutter="[12, 12]">
         <a-col :span="8">
-          <a-statistic title="今日提醒" :value="remindersStore.todayReminders.length" value-style="{ color: '#ff4d4f' }">
+          <a-statistic title="今日提醒" :value="remindersStore.todayReminders.length" :value-style="{ color: '#ff4d4f' }">
             <template #prefix><BellOutlined /></template>
           </a-statistic>
         </a-col>
         <a-col :span="8">
-          <a-statistic title="已逾期" :value="remindersStore.overdueReminders.length" value-style="{ color: '#faad14' }">
+          <a-statistic title="已逾期" :value="remindersStore.overdueReminders.length" :value-style="{ color: '#faad14' }">
             <template #prefix><ExclamationCircleOutlined /></template>
           </a-statistic>
         </a-col>
         <a-col :span="8">
-          <a-statistic title="即将到来" :value="remindersStore.upcomingReminders.length" value-style="{ color: '#52c41a' }">
+          <a-statistic title="即将到来" :value="remindersStore.upcomingReminders.length" :value-style="{ color: '#52c41a' }">
             <template #prefix><ClockCircleOutlined /></template>
           </a-statistic>
         </a-col>
