@@ -2,10 +2,14 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { GrowthRecord, HealthStatus } from '@/types'
 import { mockGrowthRecords, generateId } from '@/data/mockData'
+import { growthRecordStorage } from '@/utils/storage'
 import dayjs from 'dayjs'
 
 export const useGrowthRecordsStore = defineStore('growthRecords', () => {
-  const records = ref<GrowthRecord[]>([...mockGrowthRecords])
+  const storedRecords = growthRecordStorage.loadGrowthRecords()
+  const records = ref<GrowthRecord[]>(
+    storedRecords && storedRecords.length > 0 ? storedRecords : [...mockGrowthRecords]
+  )
 
   const getRecordsByPlantId = (plantId: string) => {
     return records.value
@@ -22,6 +26,10 @@ export const useGrowthRecordsStore = defineStore('growthRecords', () => {
     return plantRecords.length > 0 ? plantRecords[0] : null
   }
 
+  const saveRecords = () => {
+    growthRecordStorage.saveGrowthRecords([...records.value])
+  }
+
   const addRecord = (recordData: Omit<GrowthRecord, 'id' | 'createdAt'>) => {
     const newRecord: GrowthRecord = {
       ...recordData,
@@ -29,6 +37,7 @@ export const useGrowthRecordsStore = defineStore('growthRecords', () => {
       createdAt: dayjs().format('YYYY-MM-DD')
     }
     records.value.push(newRecord)
+    saveRecords()
     return newRecord
   }
 
@@ -39,6 +48,7 @@ export const useGrowthRecordsStore = defineStore('growthRecords', () => {
         ...records.value[index],
         ...updates
       }
+      saveRecords()
       return records.value[index]
     }
     return null
@@ -48,6 +58,7 @@ export const useGrowthRecordsStore = defineStore('growthRecords', () => {
     const index = records.value.findIndex(record => record.id === id)
     if (index !== -1) {
       records.value.splice(index, 1)
+      saveRecords()
       return true
     }
     return false
@@ -137,6 +148,7 @@ export const useGrowthRecordsStore = defineStore('growthRecords', () => {
     deleteRecord,
     getPlantGrowthStats,
     getHealthText,
-    getHealthColor
+    getHealthColor,
+    saveRecords
   }
 })

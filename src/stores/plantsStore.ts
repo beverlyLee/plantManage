@@ -2,10 +2,14 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Plant } from '@/types'
 import { mockPlants, generateId, mockPlantImages } from '@/data/mockData'
+import { plantStorage, isInitialized, markInitialized } from '@/utils/storage'
 import dayjs from 'dayjs'
 
 export const usePlantsStore = defineStore('plants', () => {
-  const plants = ref<Plant[]>([...mockPlants])
+  const storedPlants = plantStorage.loadPlants()
+  const plants = ref<Plant[]>(
+    storedPlants && storedPlants.length > 0 ? storedPlants : [...mockPlants]
+  )
 
   const totalPlants = computed(() => plants.value.length)
 
@@ -19,6 +23,13 @@ export const usePlantsStore = defineStore('plants', () => {
   })
 
   const plantsNeedingWaterCount = computed(() => plantsNeedingWater.value.length)
+
+  const savePlants = () => {
+    plantStorage.savePlants([...plants.value])
+    if (!isInitialized()) {
+      markInitialized()
+    }
+  }
 
   const getPlantById = (id: string) => {
     return plants.value.find(plant => plant.id === id)
@@ -37,6 +48,7 @@ export const usePlantsStore = defineStore('plants', () => {
       updatedAt: dayjs().format('YYYY-MM-DD')
     }
     plants.value.push(newPlant)
+    savePlants()
     return newPlant
   }
 
@@ -48,6 +60,7 @@ export const usePlantsStore = defineStore('plants', () => {
         ...updates,
         updatedAt: dayjs().format('YYYY-MM-DD')
       }
+      savePlants()
       return plants.value[index]
     }
     return null
@@ -57,15 +70,17 @@ export const usePlantsStore = defineStore('plants', () => {
     const index = plants.value.findIndex(plant => plant.id === id)
     if (index !== -1) {
       plants.value.splice(index, 1)
+      savePlants()
       return true
     }
     return false
   }
 
   const waterPlant = (id: string) => {
-    return updatePlant(id, {
+    const result = updatePlant(id, {
       lastWateredDate: dayjs().format('YYYY-MM-DD')
     })
+    return result
   }
 
   const searchPlants = (query: string) => {
@@ -94,6 +109,7 @@ export const usePlantsStore = defineStore('plants', () => {
     deletePlant,
     waterPlant,
     searchPlants,
-    getPlantLocations
+    getPlantLocations,
+    savePlants
   }
 })

@@ -108,7 +108,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
 import type { FormInstance, FormRules } from 'ant-design-vue'
 import {
   BellOutlined,
@@ -212,29 +212,37 @@ const disabledDate = (current: dayjs.Dayjs) => {
 
 const handleSubmit = () => {
   formRef.value?.validate().then(() => {
-    loading.value = true
+    Modal.confirm({
+      title: '确认保存',
+      content: '确定要保存这个提醒吗？',
+      okText: '确认保存',
+      cancelText: '取消',
+      onOk: () => {
+        loading.value = true
 
-    const newReminder = remindersStore.addReminder({
-      plantId: formState.plantId,
-      type: formState.type,
-      title: formState.title,
-      description: formState.description || undefined,
-      scheduledDate: formState.scheduledDate?.format('YYYY-MM-DD') || dayjs().add(1, 'day').format('YYYY-MM-DD'),
-      scheduledTime: formState.scheduledTime?.format('HH:mm'),
-      isRecurring: formState.isRecurring,
-      recurrencePattern: formState.recurrencePattern || undefined,
-      priority: formState.priority
-    })
+        const newReminder = remindersStore.addReminder({
+          plantId: formState.plantId,
+          type: formState.type,
+          title: formState.title,
+          description: formState.description || undefined,
+          scheduledDate: formState.scheduledDate?.format('YYYY-MM-DD') || dayjs().add(1, 'day').format('YYYY-MM-DD'),
+          scheduledTime: formState.scheduledTime?.format('HH:mm'),
+          isRecurring: formState.isRecurring,
+          recurrencePattern: formState.recurrencePattern || undefined,
+          priority: formState.priority
+        })
 
-    setTimeout(() => {
-      loading.value = false
-      message.success('提醒添加成功！')
-      if (preselectedPlantId.value) {
-        router.push(`/plant/${preselectedPlantId.value}`)
-      } else {
-        router.push('/reminders')
+        setTimeout(() => {
+          loading.value = false
+          message.success('提醒添加成功！')
+          if (preselectedPlantId.value) {
+            router.push(`/plant/${preselectedPlantId.value}`)
+          } else {
+            router.push('/reminders')
+          }
+        }, 500)
       }
-    }, 500)
+    })
   }).catch(() => {
     message.error('请填写必填项')
   })
@@ -262,11 +270,12 @@ const handleCancel = () => {
   right: 0;
   background: white;
   padding: 16px;
+  padding-bottom: calc(16px + 64px);
   display: flex;
   gap: 12px;
   justify-content: flex-end;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
-  z-index: 100;
+  z-index: 1000;
 }
 
 .form-actions .ant-btn {

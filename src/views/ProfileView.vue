@@ -86,20 +86,20 @@
       <a-row :gutter="[16, 16]">
         <a-col :span="8">
           <div class="quick-action" @click="handleExportData">
-            <ExportOutlined class="action-icon" />
+            <DownloadOutlined class="action-icon" />
             <div class="action-text">导出数据</div>
+          </div>
+        </a-col>
+        <a-col :span="8">
+          <div class="quick-action" @click="handleResetData">
+            <ReloadOutlined class="action-icon" />
+            <div class="action-text">重置数据</div>
           </div>
         </a-col>
         <a-col :span="8">
           <div class="quick-action" @click="handleClearCache">
             <DeleteOutlined class="action-icon" />
-            <div class="action-text">清除缓存</div>
-          </div>
-        </a-col>
-        <a-col :span="8">
-          <div class="quick-action" @click="handleRateApp">
-            <StarOutlined class="action-icon" />
-            <div class="action-text">给个好评</div>
+            <div class="action-text">清除数据</div>
           </div>
         </a-col>
       </a-row>
@@ -114,7 +114,7 @@
 
 <script setup lang="ts">
 import { ref, h } from 'vue'
-import { message, Popconfirm } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
 import {
   UserOutlined,
   InfoCircleOutlined,
@@ -127,10 +127,20 @@ import {
   ToolOutlined,
   ExportOutlined,
   DeleteOutlined,
-  StarOutlined
+  StarOutlined,
+  ReloadOutlined,
+  DownloadOutlined
 } from '@ant-design/icons-vue'
+import { clearAllStorage } from '@/utils/storage'
+import { usePlantsStore } from '@/stores/plantsStore'
+import { useRemindersStore } from '@/stores/remindersStore'
+import { useGrowthRecordsStore } from '@/stores/growthRecordsStore'
 
 const reminderEnabled = ref(true)
+
+const plantsStore = usePlantsStore()
+const remindersStore = useRemindersStore()
+const growthRecordsStore = useGrowthRecordsStore()
 
 const aIconComponent = (props: { is: any }) => h(props.is)
 
@@ -146,17 +156,54 @@ const showInfo = (type: string) => {
 }
 
 const handleExportData = () => {
-  message.info('数据导出功能开发中')
+  const exportData = {
+    plants: plantsStore.plants,
+    reminders: remindersStore.reminders,
+    growthRecords: growthRecordsStore.records,
+    exportTime: new Date().toISOString()
+  }
+
+  const dataStr = JSON.stringify(exportData, null, 2)
+  const dataBlob = new Blob([dataStr], { type: 'application/json' })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(dataBlob)
+  link.download = `plant-manage-backup-${new Date().toISOString().split('T')[0]}.json`
+  link.click()
+  URL.revokeObjectURL(link.href)
+
+  message.success('数据导出成功')
 }
 
 const handleClearCache = () => {
-  message.confirm({
-    title: '确定要清除缓存吗？',
-    content: '清除缓存不会删除你的植物数据',
-    okText: '确定',
+  Modal.confirm({
+    title: '确定要清除所有数据吗？',
+    content: '这将删除所有植物、提醒和生长记录数据，恢复到初始状态。此操作不可撤销！',
+    okText: '确定清除',
+    okType: 'danger',
     cancelText: '取消',
     onOk() {
-      message.success('缓存已清除')
+      clearAllStorage()
+      message.success('数据已清除，页面将刷新...')
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+    }
+  })
+}
+
+const handleResetData = () => {
+  Modal.confirm({
+    title: '确定要重置数据吗？',
+    content: '这将恢复到初始的示例数据。你添加的自定义数据将被删除。',
+    okText: '确定重置',
+    okType: 'warning',
+    cancelText: '取消',
+    onOk() {
+      clearAllStorage()
+      message.success('数据已重置，页面将刷新...')
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
     }
   })
 }

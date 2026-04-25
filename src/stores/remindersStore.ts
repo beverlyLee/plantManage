@@ -2,10 +2,14 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Reminder } from '@/types'
 import { mockReminders, generateId } from '@/data/mockData'
+import { reminderStorage } from '@/utils/storage'
 import dayjs from 'dayjs'
 
 export const useRemindersStore = defineStore('reminders', () => {
-  const reminders = ref<Reminder[]>([...mockReminders])
+  const storedReminders = reminderStorage.loadReminders()
+  const reminders = ref<Reminder[]>(
+    storedReminders && storedReminders.length > 0 ? storedReminders : [...mockReminders]
+  )
 
   const upcomingReminders = computed(() => {
     const today = dayjs()
@@ -36,6 +40,10 @@ export const useRemindersStore = defineStore('reminders', () => {
     })
   })
 
+  const saveReminders = () => {
+    reminderStorage.saveReminders([...reminders.value])
+  }
+
   const getReminderById = (id: string) => {
     return reminders.value.find(reminder => reminder.id === id)
   }
@@ -59,6 +67,7 @@ export const useRemindersStore = defineStore('reminders', () => {
       updatedAt: dayjs().format('YYYY-MM-DD')
     }
     reminders.value.push(newReminder)
+    saveReminders()
     return newReminder
   }
 
@@ -70,6 +79,7 @@ export const useRemindersStore = defineStore('reminders', () => {
         ...updates,
         updatedAt: dayjs().format('YYYY-MM-DD')
       }
+      saveReminders()
       return reminders.value[index]
     }
     return null
@@ -79,16 +89,18 @@ export const useRemindersStore = defineStore('reminders', () => {
     const index = reminders.value.findIndex(reminder => reminder.id === id)
     if (index !== -1) {
       reminders.value.splice(index, 1)
+      saveReminders()
       return true
     }
     return false
   }
 
   const completeReminder = (id: string) => {
-    return updateReminder(id, {
+    const result = updateReminder(id, {
       isCompleted: true,
       completedDate: dayjs().format('YYYY-MM-DD')
     })
+    return result
   }
 
   const getReminderPriorityClass = (reminder: Reminder) => {
@@ -137,6 +149,7 @@ export const useRemindersStore = defineStore('reminders', () => {
     completeReminder,
     getReminderPriorityClass,
     getReminderTypeText,
-    getPriorityText
+    getPriorityText,
+    saveReminders
   }
 })

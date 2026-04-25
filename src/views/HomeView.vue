@@ -108,7 +108,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
 import {
   EnvironmentOutlined,
   CloudOutlined,
@@ -160,8 +160,16 @@ const getDaysSinceWatered = (plant: Plant) => {
 }
 
 const handleQuickWater = (plant: Plant) => {
-  plantsStore.waterPlant(plant.id)
-  message.success(`已记录给${plant.name}浇水`)
+  Modal.confirm({
+    title: '确认浇水',
+    content: `确定要给${plant.nickname || plant.name}记录浇水吗？`,
+    okText: '确认',
+    cancelText: '取消',
+    onOk: () => {
+      plantsStore.waterPlant(plant.id)
+      message.success(`已记录给${plant.name}浇水`)
+    }
+  })
 }
 </script>
 

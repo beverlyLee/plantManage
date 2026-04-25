@@ -1,5 +1,5 @@
 <template>
-  <div class="add-growth-view">
+  <div v-if="plant" class="add-growth-view">
     <a-form
       ref="formRef"
       :model="formState"
@@ -7,7 +7,7 @@
       layout="vertical"
       @finish="handleSubmit"
     >
-      <div class="plant-info-section" v-if="plant">
+      <div class="plant-info-section">
         <a-card class="info-card">
           <div class="plant-summary">
             <img :src="plant.image" :alt="plant.name" class="plant-avatar" />
@@ -126,7 +126,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
 import type { FormInstance, FormRules } from 'ant-design-vue'
 import {
   RiseOutlined,
@@ -186,22 +186,30 @@ const disabledDate = (current: dayjs.Dayjs) => {
 
 const handleSubmit = () => {
   formRef.value?.validate().then(() => {
-    loading.value = true
+    Modal.confirm({
+      title: '确认保存',
+      content: '确定要保存这条生长记录吗？',
+      okText: '确认保存',
+      cancelText: '取消',
+      onOk: () => {
+        loading.value = true
 
-    const newRecord = growthRecordsStore.addRecord({
-      plantId: plantId.value,
-      date: formState.date?.format('YYYY-MM-DD') || dayjs().format('YYYY-MM-DD'),
-      health: formState.health,
-      height: formState.height || undefined,
-      leafCount: formState.leafCount || undefined,
-      notes: formState.notes || undefined
+        const newRecord = growthRecordsStore.addRecord({
+          plantId: plantId.value,
+          date: formState.date?.format('YYYY-MM-DD') || dayjs().format('YYYY-MM-DD'),
+          health: formState.health,
+          height: formState.height || undefined,
+          leafCount: formState.leafCount || undefined,
+          notes: formState.notes || undefined
+        })
+
+        setTimeout(() => {
+          loading.value = false
+          message.success('生长记录添加成功！')
+          router.push(`/plant/${plantId.value}`)
+        }, 500)
+      }
     })
-
-    setTimeout(() => {
-      loading.value = false
-      message.success('生长记录添加成功！')
-      router.push(`/plant/${plantId.value}`)
-    }, 500)
   }).catch(() => {
     message.error('请填写必填项')
   })
@@ -293,11 +301,12 @@ const handleCancel = () => {
   right: 0;
   background: white;
   padding: 16px;
+  padding-bottom: calc(16px + 64px);
   display: flex;
   gap: 12px;
   justify-content: flex-end;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
-  z-index: 100;
+  z-index: 1000;
 }
 
 .form-actions .ant-btn {

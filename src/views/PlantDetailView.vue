@@ -99,7 +99,7 @@
             <a-button
               type="primary"
               size="small"
-              @click="remindersStore.completeReminder(reminder.id)"
+              @click="handleCompleteReminder(reminder)"
             >
               完成
             </a-button>
@@ -191,7 +191,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
 import {
   CloudOutlined,
   RiseOutlined,
@@ -287,12 +287,20 @@ const formatDate = (date: string) => {
 
 const handleQuickWater = () => {
   if (!plant.value) return
-  wateringLoading.value = true
-  plantsStore.waterPlant(plant.value.id)
-  setTimeout(() => {
-    wateringLoading.value = false
-    message.success(`已记录给${plant.value?.name}浇水`)
-  }, 500)
+  Modal.confirm({
+    title: '确认浇水',
+    content: `确定要给${plant.value.nickname || plant.value.name}记录浇水吗？`,
+    okText: '确认',
+    cancelText: '取消',
+    onOk: () => {
+      wateringLoading.value = true
+      plantsStore.waterPlant(plant.value!.id)
+      setTimeout(() => {
+        wateringLoading.value = false
+        message.success(`已记录给${plant.value?.name}浇水`)
+      }, 500)
+    }
+  })
 }
 
 const navigateToAddGrowth = () => {
@@ -305,6 +313,19 @@ const navigateToAddReminder = () => {
   if (plant.value) {
     router.push(`/add-reminder/${plant.value.id}`)
   }
+}
+
+const handleCompleteReminder = (reminder: any) => {
+  Modal.confirm({
+    title: '确认完成提醒',
+    content: `确定要标记"${reminder.title}"为已完成吗？`,
+    okText: '确认',
+    cancelText: '取消',
+    onOk: () => {
+      remindersStore.completeReminder(reminder.id)
+      message.success('提醒已完成')
+    }
+  })
 }
 </script>
 
