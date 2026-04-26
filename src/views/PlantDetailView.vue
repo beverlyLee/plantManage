@@ -158,9 +158,22 @@
                     {{ growthRecordsStore.getHealthText(record.health) }}
                   </a-tag>
                 </div>
-                <div class="record-stats" v-if="record.height || record.leafCount">
+                <div class="record-stats" v-if="record.height || record.width || record.leafCount">
                   <span v-if="record.height">高度: {{ record.height }}cm</span>
+                  <span v-if="record.width">宽度: {{ record.width }}cm</span>
                   <span v-if="record.leafCount">叶片: {{ record.leafCount }}片</span>
+                </div>
+                <div class="record-images" v-if="record.images && record.images.length > 0">
+                  <img
+                    v-for="(img, idx) in record.images.slice(0, 3)"
+                    :key="idx"
+                    :src="img"
+                    class="record-image"
+                    @click="handleImagePreview(record.images!, idx)"
+                  />
+                  <div v-if="record.images.length > 3" class="more-images">
+                    <span>+{{ record.images.length - 3 }}</span>
+                  </div>
                 </div>
                 <div class="record-notes" v-if="record.notes">
                   {{ record.notes }}
@@ -186,6 +199,36 @@
     <div class="empty-text">植物不存在</div>
     <a-button type="primary" @click="router.push('/')">返回首页</a-button>
   </div>
+
+  <a-modal
+    :open="previewVisible"
+    :footer="null"
+    :closable="true"
+    @cancel="handleClosePreview"
+  >
+    <div class="image-preview-container">
+      <a-button
+        class="preview-nav preview-prev"
+        @click="handlePrevImage"
+        :disabled="currentPreviewIndex === 0"
+        v-if="previewImages.length > 1"
+      >
+        <LeftOutlined />
+      </a-button>
+      <img :src="previewImages[currentPreviewIndex]" class="preview-image" />
+      <a-button
+        class="preview-nav preview-next"
+        @click="handleNextImage"
+        :disabled="currentPreviewIndex === previewImages.length - 1"
+        v-if="previewImages.length > 1"
+      >
+        <RightOutlined />
+      </a-button>
+    </div>
+    <div class="preview-indicator" v-if="previewImages.length > 1">
+      {{ currentPreviewIndex + 1 }} / {{ previewImages.length }}
+    </div>
+  </a-modal>
 </template>
 
 <script setup lang="ts">
@@ -201,7 +244,9 @@ import {
   ClockCircleOutlined,
   BulbOutlined,
   ThunderboltOutlined,
-  EditOutlined
+  EditOutlined,
+  LeftOutlined,
+  RightOutlined
 } from '@ant-design/icons-vue'
 import { usePlantsStore } from '@/stores/plantsStore'
 import { useRemindersStore } from '@/stores/remindersStore'
@@ -217,6 +262,9 @@ const growthRecordsStore = useGrowthRecordsStore()
 
 const activeTab = ref('info')
 const wateringLoading = ref(false)
+const previewVisible = ref(false)
+const previewImages = ref<string[]>([])
+const currentPreviewIndex = ref(0)
 
 const plantId = computed(() => route.params.id as string)
 const plant = computed(() => plantsStore.getPlantById(plantId.value))
@@ -326,6 +374,28 @@ const handleCompleteReminder = (reminder: any) => {
       message.success('提醒已完成')
     }
   })
+}
+
+const handleImagePreview = (images: string[], index: number) => {
+  previewImages.value = images
+  currentPreviewIndex.value = index
+  previewVisible.value = true
+}
+
+const handleClosePreview = () => {
+  previewVisible.value = false
+}
+
+const handlePrevImage = () => {
+  if (currentPreviewIndex.value > 0) {
+    currentPreviewIndex.value--
+  }
+}
+
+const handleNextImage = () => {
+  if (currentPreviewIndex.value < previewImages.value.length - 1) {
+    currentPreviewIndex.value++
+  }
 }
 </script>
 
@@ -526,5 +596,91 @@ const handleCompleteReminder = (reminder: any) => {
 .not-found {
   text-align: center;
   padding: 64px 24px;
+}
+
+.record-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.record-image {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.record-image:hover {
+  transform: scale(1.05);
+}
+
+.more-images {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.image-preview-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 500px;
+  object-fit: contain;
+}
+
+.preview-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+}
+
+.preview-nav:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.preview-nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.preview-prev {
+  left: 0;
+}
+
+.preview-next {
+  right: 0;
+}
+
+.preview-indicator {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 14px;
+  color: #8c8c8c;
 }
 </style>

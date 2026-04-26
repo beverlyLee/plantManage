@@ -51,7 +51,7 @@
         </a-form-item>
 
         <a-row :gutter="[16, 0]">
-          <a-col :span="12">
+          <a-col :span="8">
             <a-form-item label="高度 (cm)" name="height">
               <a-input-number
                 v-model:value="formState.height"
@@ -62,7 +62,18 @@
               />
             </a-form-item>
           </a-col>
-          <a-col :span="12">
+          <a-col :span="8">
+            <a-form-item label="宽度 (cm)" name="width">
+              <a-input-number
+                v-model:value="formState.width"
+                :min="0"
+                :max="1000"
+                placeholder="可选"
+                style="width: 100%"
+              />
+            </a-form-item>
+          </a-col>
+          <a-col :span="8">
             <a-form-item label="叶片数" name="leafCount">
               <a-input-number
                 v-model:value="formState.leafCount"
@@ -74,6 +85,29 @@
             </a-form-item>
           </a-col>
         </a-row>
+      </a-card>
+
+      <a-card class="form-card">
+        <template #title>
+          <PictureOutlined /> 生长照片
+        </template>
+        <a-form-item label="上传照片" name="images">
+          <a-upload
+            :file-list="fileList"
+            list-type="picture-card"
+            :before-upload="beforeUpload"
+            :on-preview="handlePreview"
+            :on-remove="handleRemove"
+            accept="image/*"
+            :max-count="9"
+          >
+            <div v-if="fileList.length < 9">
+              <PlusOutlined />
+              <div style="margin-top: 8px">上传</div>
+            </div>
+          </a-upload>
+          <div class="upload-tip">点击上传植物生长照片，最多9张</div>
+        </a-form-item>
       </a-card>
 
       <a-card class="form-card">
@@ -99,7 +133,7 @@
             <span class="tips-title">养护提示</span>
           </div>
           <a-list size="small" :data-source="quickTips">
-            <a-list-item v-slot="{ item }">
+            <a-list-item v-for="item in quickTips" :key="item">
               <CheckCircleOutlined style="color: #52c41a; margin-right: 8px;" />
               {{ item }}
             </a-list-item>
@@ -121,19 +155,26 @@
     <div class="empty-text">植物不存在</div>
     <a-button type="primary" @click="router.push('/')">返回首页</a-button>
   </div>
+
+  <a-modal :open="previewVisible" :footer="null" @cancel="() => (previewVisible.value = false)">
+    <img alt="preview" style="width: 100%" :src="previewImage" />
+  </a-modal>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message, Modal } from 'ant-design-vue'
-import type { FormInstance, FormRules } from 'ant-design-vue'
+import { message, Modal, Upload } from 'ant-design-vue'
+import type { FormInstance, FormRules, UploadProps } from 'ant-design-vue'
+import type { UploadFile } from 'ant-design-vue/es/upload/interface'
 import {
   RiseOutlined,
   EditOutlined,
   CheckCircleOutlined,
   BulbOutlined,
-  EnvironmentOutlined
+  EnvironmentOutlined,
+  PictureOutlined,
+  PlusOutlined
 } from '@ant-design/icons-vue'
 import { usePlantsStore } from '@/stores/plantsStore'
 import { useGrowthRecordsStore } from '@/stores/growthRecordsStore'
@@ -146,6 +187,9 @@ const plantsStore = usePlantsStore()
 const growthRecordsStore = useGrowthRecordsStore()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
+const fileList = ref<UploadFile[]>([])
+const previewVisible = ref(false)
+const previewImage = ref('')
 
 const plantId = computed(() => route.params.plantId as string)
 const plant = computed(() => plantsStore.getPlantById(plantId.value))
@@ -161,12 +205,14 @@ const formState = reactive<{
   date: dayjs.Dayjs | null
   health: GrowthRecord['health']
   height: number | null
+  width: number | null
   leafCount: number | null
   notes: string
 }>({
   date: dayjs(),
   health: 'good',
   height: null,
+  width: null,
   leafCount: null,
   notes: ''
 })
@@ -184,6 +230,62 @@ const disabledDate = (current: dayjs.Dayjs) => {
   return current && current > dayjs().endOf('day')
 }
 
+const getBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = (error) => reject(error)
+  })
+
+const beforeUpload: UploadProps['beforeUpload'] = async (file) => {
+  const isImage = file.type?.startsWith('image/')
+  if (!isImage) {
+    message.error('只能上传图片文件!')
+    return Upload.LIST_IGNORE
+  }
+  const isLt10M = file.size! / 1024 / 1024 < 10
+  if (!isLt10M) {
+    message.error('图片大小不能超过 10MB!')
+    return Upload.LIST_IGNORE
+  }
+
+  try {
+    const base64 = await getBase64(file as File)
+    
+    const newFile: UploadFile = {
+      uid: file.uid || Date.now().toString(),
+      name: file.name,
+      status: 'done',
+      url: base64,
+      thumbUrl: base64
+    }
+    
+    fileList.value = [...fileList.value, newFile]
+    
+    return Upload.LIST_IGNORE
+  } catch (error) {
+    console.error('Failed to convert image to base64:', error)
+    message.error('图片处理失败')
+    return Upload.LIST_IGNORE
+  }
+}
+
+const handlePreview = async (file: UploadFile) => {
+  if (!file.url && !file.preview) {
+    file.preview = await getBase64(file.originFileObj as File)
+  }
+  previewImage.value = file.url || file.preview || ''
+  previewVisible.value = true
+}
+
+const handleRemove = (file: UploadFile) => {
+  const index = fileList.value.indexOf(file)
+  if (index > -1) {
+    fileList.value.splice(index, 1)
+  }
+}
+
 const handleSubmit = () => {
   formRef.value?.validate().then(() => {
     Modal.confirm({
@@ -194,13 +296,19 @@ const handleSubmit = () => {
       onOk: () => {
         loading.value = true
 
+        const images = fileList.value
+          .filter(f => f.status === 'done' && f.url)
+          .map(f => f.url!)
+
         const newRecord = growthRecordsStore.addRecord({
           plantId: plantId.value,
           date: formState.date?.format('YYYY-MM-DD') || dayjs().format('YYYY-MM-DD'),
           health: formState.health,
           height: formState.height || undefined,
+          width: formState.width || undefined,
           leafCount: formState.leafCount || undefined,
-          notes: formState.notes || undefined
+          notes: formState.notes || undefined,
+          images: images.length > 0 ? images : undefined
         })
 
         setTimeout(() => {
@@ -292,6 +400,12 @@ const handleCancel = () => {
   font-size: 14px;
   font-weight: 600;
   color: #d48806;
+}
+
+.upload-tip {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-top: 8px;
 }
 
 .form-actions {
